@@ -69,11 +69,14 @@ func (e *Executor) CreateOperationContext(ctx context.Context, params *graphql.R
 		return rc, gqlerror.List{gqlerror.Errorf("operation %s not found", params.OperationName)}
 	}
 
-	var err *gqlerror.Error
+	var err error
 	rc.Variables, err = validator.VariableValues(e.es.Schema(), rc.Operation, params.Variables)
 	if err != nil {
-		errcode.Set(err, errcode.ValidationFailed)
-		return rc, gqlerror.List{err}
+		gqlErr := &gqlerror.Error{
+			Message: err.Error(),
+		}
+		errcode.Set(gqlErr, errcode.ValidationFailed)
+		return rc, gqlerror.List{gqlErr}
 	}
 	rc.Stats.Validation.End = graphql.Now()
 
@@ -171,8 +174,11 @@ func (e *Executor) parseQuery(ctx context.Context, stats *graphql.Stats, query s
 
 	doc, err := parser.ParseQuery(&ast.Source{Input: query})
 	if err != nil {
-		errcode.Set(err, errcode.ParseFailed)
-		return nil, gqlerror.List{err}
+		gqlErr := &gqlerror.Error{
+			Message: err.Error(),
+		}
+		errcode.Set(gqlErr, errcode.ParseFailed)
+		return nil, gqlerror.List{gqlErr}
 	}
 	stats.Parsing.End = graphql.Now()
 
